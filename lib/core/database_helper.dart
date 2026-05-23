@@ -23,7 +23,6 @@ class DatabaseHelper {
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    // MEMBUAT TABEL DAN KOLOM 100% SESUAI LEMBAR SOAL BORWITA
     await db.execute('''
       CREATE TABLE cart_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,18 +38,25 @@ class DatabaseHelper {
     ''');
   }
 
-  // 1. Mengambil data item keranjang
+  // Mengambil semua item di keranjang
   Future<List<Map<String, dynamic>>> getCartItems() async {
     Database db = await instance.database;
     return await db.query('cart_items');
   }
 
-  // 2. Menambah produk ke keranjang (Atau update jika product_id sudah ada)
+  // Menambah atau memperbarui item di keranjang (Super Safe Mode)
   Future<int> addToCart(Map<String, dynamic> product) async {
     Database db = await instance.database;
-    int prodId = product['id'];
-    double prodPrice = (product['price'] as num).toDouble();
     
+    // Antispasi variasi key ID dari model objek maupun map mentah
+    int prodId = product['product_id'] ?? product['id'];
+    
+    // Proteksi konversi tipe data num/int/double dari API agar tidak crash di APK Rilis
+    double prodPrice = 0.0;
+    if (product['price'] != null) {
+      prodPrice = (product['price'] as num).toDouble();
+    }
+
     List<Map<String, dynamic>> maps = await db.query(
       'cart_items',
       where: 'product_id = ?',
@@ -71,9 +77,9 @@ class DatabaseHelper {
       );
     } else {
       return await db.insert('cart_items', {
-        'product_id': product['id'],
-        'product_title': product['title'],
-        'product_image': product['image'],
+        'product_id': prodId,
+        'product_title': product['product_title'] ?? product['title'] ?? 'No Title',
+        'product_image': product['product_image'] ?? product['image'] ?? '',
         'category': product['category'] ?? 'General',
         'price': prodPrice,
         'quantity': 1,
@@ -83,7 +89,7 @@ class DatabaseHelper {
     }
   }
 
-  // 3. Mengurangi quantity produk
+  // Mengurangi kuantitas atau menghapus jika kuantitas = 1
   Future<int> removeFromCart(int productId) async {
     Database db = await instance.database;
     List<Map<String, dynamic>> maps = await db.query(
@@ -114,7 +120,7 @@ class DatabaseHelper {
     return 0;
   }
 
-  // 4. Mengosongkan keranjang
+  // Mengosongkan keranjang belanja setelah checkout sukses
   Future<int> clearCart() async {
     Database db = await instance.database;
     return await db.delete('cart_items');

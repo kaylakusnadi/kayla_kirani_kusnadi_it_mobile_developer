@@ -5,6 +5,7 @@ import '../bloc/store_event.dart';
 import '../bloc/store_state.dart';
 import '../../data/product_model.dart';
 import 'product_detail_screen.dart';
+import '../../../../core/database_helper.dart'; // IMPORT DATABASE HELPER
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -27,11 +28,14 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const Color borwitaNavy = Color(0xFF222C57);
+    const Color borwitaRed = Color(0xFFF24134);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Fake Storemart'),
-        backgroundColor: const Color(0xFF222C57),
+        title: const Text('Borwita Mart'),
+        backgroundColor: borwitaNavy,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false, // Menghilangkan panah back otomatis
       ),
@@ -46,7 +50,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   child: TextField(
                     decoration: const InputDecoration(
                       hintText: 'Search product...',
-                      prefixIcon: Icon(Icons.search, color: Color(0xFF222C57)),
+                      prefixIcon: Icon(Icons.search, color: borwitaNavy),
                       contentPadding: EdgeInsets.symmetric(vertical: 0),
                     ),
                     onChanged: (v) => setState(() => query = v),
@@ -54,7 +58,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 ),
                 const SizedBox(width: 4),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.filter_alt, color: Color(0xFF222C57), size: 28),
+                  icon: const Icon(Icons.filter_alt, color: borwitaNavy, size: 28),
                   tooltip: "Filter Category",
                   onSelected: (v) => setState(() => selectedCategory = v),
                   itemBuilder: (_) => ['All', 'Clothes', 'Electronics', 'Furniture', 'Shoes', 'Others']
@@ -62,7 +66,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       .toList(),
                 ),
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.swap_vert, color: Color(0xFF222C57), size: 28),
+                  icon: const Icon(Icons.swap_vert, color: borwitaNavy, size: 28),
                   tooltip: "Sort Price",
                   onSelected: (v) => setState(() => sortOrder = v),
                   itemBuilder: (_) => [
@@ -81,7 +85,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 if (state is StoreLoading) {
                   return const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF24134)),
+                      valueColor: AlwaysStoppedAnimation<Color>(borwitaRed),
                     ),
                   );
                 }
@@ -115,7 +119,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      childAspectRatio: 0.72,
+                      childAspectRatio: 0.67, // Diubah ke 0.67 agar pas menampung tombol aksi baru di bagian bawah
                       crossAxisSpacing: 10,
                       mainAxisSpacing: 10,
                     ),
@@ -141,7 +145,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Render Gambar dengan Fitur Interseptor Kegagalan Jaringan
+                              // Render Gambar
                               Expanded(
                                 child: Container(
                                   padding: const EdgeInsets.all(12),
@@ -175,21 +179,61 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      '\$${item.price.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        color: Color(0xFFF24134),
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
                                       item.category,
                                       style: const TextStyle(
                                         color: Colors.grey,
                                         fontSize: 11,
                                         fontStyle: FontStyle.italic,
                                       ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    // Row untuk Harga dan Tombol Add to Cart Resmi
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          '\$${item.price.toStringAsFixed(2)}',
+                                          style: const TextStyle(
+                                            color: borwitaRed,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        // TOMBOL ADD TO CART YANG SUDAH TERINTEGRASI BLoC + SQLITE
+                                        IconButton(
+                                          constraints: const BoxConstraints(),
+                                          padding: EdgeInsets.zero,
+                                          icon: const Icon(Icons.add_shopping_cart, color: borwitaNavy, size: 22),
+                                          onPressed: () async {
+                                            // 1. Simpan ke database SQLite lokal dengan skema Borwita
+                                            await DatabaseHelper.instance.addToCart({
+                                              'id': item.id,
+                                              'title': item.title,
+                                              'price': item.price,
+                                              'image': item.image,
+                                              'category': item.category,
+                                            });
+
+                                            // 2. Picu pembaruan state global BLoC
+                                            if (context.mounted) {
+                                              context.read<StoreBloc>().add(LoadProductsAndCart());
+                                              
+                                              // Memunculkan snackbar penanda sukses
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  backgroundColor: borwitaNavy,
+                                                  content: Text(
+                                                    '${item.title} ditambahkan!',
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  duration: const Duration(milliseconds: 700),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
