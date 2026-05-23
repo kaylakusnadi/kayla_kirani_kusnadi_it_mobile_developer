@@ -1,0 +1,40 @@
+name: kayla_kirani_kusnadi_it_mobile_developer
+description: "Fake Storemart Application for Borwita Mobile Developer Technical Test."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.8
+  http: ^1.6.0
+  sqflite: ^2.4.2+1
+  shared_preferences: ^2.5.5
+  image_picker: ^1.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/logo_borwita.png
+    - assets/app.png 
+
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/app.png"
+  min_sdk_android: 21
